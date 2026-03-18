@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-indigo-50: #f4f7f1;
+  --color-indigo-100: #e3ecd9;
+  --color-indigo-200: #c5dcb0;
+  --color-indigo-300: #a2c883;
+  --color-indigo-400: #90bb6b;
+  --color-indigo-500: #769e55;
+  --color-indigo-600: #628146;
+  --color-indigo-700: #4e6738;
+  --color-indigo-800: #3e522d;
+  --color-indigo-900: #2e3d22;
+
+  --color-slate-50: #fcfaf6;
+  --color-slate-100: #f5f0e6;
+  --color-slate-200: #e8d3a2;
+  --color-slate-300: #d1be92;
+  --color-slate-400: #a69774;
+  --color-slate-500: #7a6f55;
+  --color-slate-600: #5c5340;
+  --color-slate-700: #403a2d;
+  --color-slate-800: #2b271e;
+  --color-slate-900: #1a2019;
+  --color-slate-950: #0d100c;
+}

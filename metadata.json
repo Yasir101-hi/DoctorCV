@@ -1,0 +1,5 @@
+{
+  "name": "CV Doctor",
+  "description": "Expert ATS Resume Reviewer, career consultant, and LaTeX resume specialist. Evaluates CVs, provides ATS scores, rewrites CVs, and generates LaTeX code.",
+  "requestFramePermissions": []
+}
