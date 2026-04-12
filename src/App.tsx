@@ -6,7 +6,7 @@ import { FileText, Briefcase, Loader2, FileCode2, Building, MapPin, Sparkles, Up
 import * as mammoth from 'mammoth';
 import { ATSAnalysis } from './types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'new' | 'history' | 'compare' | 'resumes' | 'cover-letters'>('new');
