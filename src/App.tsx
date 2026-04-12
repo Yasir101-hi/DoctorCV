@@ -264,9 +264,9 @@ Include the calculated scores, the deep analysis report, a professionally rewrit
       });
       
       setStep('results');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing CV:', error);
-      alert('Failed to analyze CV. Please try again.');
+      alert(`Failed to analyze CV: ${error.message || error}`);
       setStep('input');
     }
   };
