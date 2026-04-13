@@ -10,7 +10,7 @@ const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY
 });
 
-const MODEL_NAME = "gemini-1.5-flash";
+const MODEL_NAME = "gemini-3.1-flash-lite-preview";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'new' | 'history' | 'compare' | 'resumes' | 'cover-letters'>('new');
