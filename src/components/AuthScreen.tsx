@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail 
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Loader2, FileCode2, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Loader2, FileCode2, CheckCircle2, Stethoscope, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function AuthScreen() {
@@ -171,28 +171,86 @@ export default function AuthScreen() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 sm:p-8">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-          {/* Header */}
-          <div className="p-8 pb-6 text-center">
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <FileCode2 className="w-8 h-8" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              {isLogin ? 'Welcome back' : 'Create an account'}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">
-              {isLogin 
-                ? 'Enter your details to access your ATS Analyzer account.' 
-                : 'Sign up to analyze your CV and generate cover letters.'}
-            </p>
+  const Logo = ({ isDark = false }: { isDark?: boolean }) => (
+    <div className="flex items-center gap-3 drop-shadow-md">
+      {/* Custom Logo Icon */}
+      <div className="relative flex items-center justify-center w-14 h-14 shrink-0">
+        {/* Document/Clipboard */}
+        <div className={`absolute inset-1 ${isDark ? 'bg-white/10 border-white/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600'} rounded-lg shadow-md border-2 flex flex-col items-center pt-1.5 z-10 transition-colors`}>
+          <div className="w-4 h-4 text-green-500 mb-0.5">
+            <Plus className="w-full h-full" strokeWidth={4} />
           </div>
+          <div className={`w-6 h-0.5 ${isDark ? 'bg-white/40' : 'bg-slate-200 dark:bg-slate-500'} mb-1 rounded-full transition-colors`}></div>
+          <div className={`w-6 h-0.5 ${isDark ? 'bg-white/40' : 'bg-slate-200 dark:bg-slate-500'} mb-1 rounded-full transition-colors`}></div>
+          <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" strokeWidth={2.5} />
+        </div>
+        
+        {/* Stethoscope Wrapping */}
+        <Stethoscope className={`w-16 h-16 ${isDark ? 'text-white' : 'text-blue-600 dark:text-blue-500'} absolute -bottom-2 -left-2 z-20 drop-shadow-md`} strokeWidth={1.5} />
+        
+        {/* Magnifying Glass with Plus */}
+        <div className={`absolute -bottom-1 -right-2 ${isDark ? 'bg-white/20 border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'} rounded-full p-0.5 shadow-md border z-30`}>
+          <div className={`bg-green-500 rounded-full p-1 flex items-center justify-center border-2 ${isDark ? 'border-transparent' : 'border-blue-600 dark:border-blue-500'}`}>
+            <Plus className="w-3 h-3 text-white" strokeWidth={4} />
+          </div>
+        </div>
+      </div>
+      
+      {/* Logo Text */}
+      <h1 className="flex flex-col leading-none">
+        <span className={`text-3xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-blue-600 dark:text-blue-500'} uppercase`}>CV</span>
+        <span className={`text-2xl font-bold tracking-tight ${isDark ? 'text-green-300' : 'text-green-500 dark:text-green-400'} -mt-1`}>Doctor</span>
+      </h1>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
+      {/* Left Side - Branding (Hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-green-500 p-12 flex-col justify-between relative overflow-hidden">
+        {/* Abstract shapes */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 right-0 w-64 h-64 bg-green-400/20 rounded-full blur-3xl transform translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/20 to-transparent"></div>
+        </div>
+        
+        <div className="relative z-10">
+          <Logo isDark={true} />
+        </div>
+        
+        <div className="relative z-10 text-white mb-12">
+          <h2 className="text-4xl font-bold mb-6 leading-tight">Diagnose and Perfect<br/>Your CV</h2>
+          <p className="text-blue-50 text-lg max-w-md leading-relaxed">
+            Join thousands of professionals who have optimized their resumes for ATS systems and landed their dream jobs.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side - Auth Form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+        {/* Mobile Logo (visible only on small screens) */}
+        <div className="lg:hidden mb-8">
+          <Logo />
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            {/* Header */}
+            <div className="p-8 pb-6 text-center">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                {isLogin ? 'Welcome back' : 'Create an account'}
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
+                {isLogin 
+                  ? 'Enter your details to access your ATS Analyzer account.' 
+                  : 'Sign up to analyze your CV and generate cover letters.'}
+              </p>
+            </div>
 
           {/* Form */}
           <div className="px-8 pb-8">
@@ -379,5 +437,6 @@ export default function AuthScreen() {
         </div>
       </motion.div>
     </div>
+  </div>
   );
 }
