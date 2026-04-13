@@ -2,9 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, Briefcase, Loader2, FileCode2, Building, MapPin, Sparkles, Upload, X, History, LayoutDashboard, ChevronRight, CheckCircle2, AlertCircle, Download, Copy, Trash2, Search, Settings, FileUser, Moon, Sun, Stethoscope, ChevronDown, ChevronUp, Eye, ClipboardCheck, Plus, Menu } from 'lucide-react';
+import { FileText, Briefcase, Loader2, FileCode2, Building, MapPin, Sparkles, Upload, X, History, LayoutDashboard, ChevronRight, CheckCircle2, AlertCircle, Download, Copy, Trash2, Search, Settings, FileUser, Moon, Sun, Stethoscope, ChevronDown, ChevronUp, Eye, ClipboardCheck, Plus, Menu, LogOut, LogIn } from 'lucide-react';
 import * as mammoth from 'mammoth';
 import { ATSAnalysis } from './types';
+import { auth, db } from './firebase';
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import AuthScreen from './components/AuthScreen';
 
 const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY
@@ -42,24 +46,74 @@ export default function App() {
   const [coverLetterInput, setCoverLetterInput] = useState({ jobTitle: '', companyName: '', location: '' });
   const [coverLetterResult, setCoverLetterResult] = useState('');
 
+  // Auth State
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem('atsHistory');
-    if (savedHistory) {
-      try {
-        setHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error('Failed to parse history', e);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+      
+      if (currentUser) {
+        // Fetch history from Firestore
+        try {
+          const q = query(
+            collection(db, 'analyses'),
+            where('userId', '==', currentUser.uid),
+            orderBy('date', 'desc')
+          );
+          const querySnapshot = await getDocs(q);
+          const fetchedHistory: ATSAnalysis[] = [];
+          querySnapshot.forEach((doc) => {
+            fetchedHistory.push(doc.data() as ATSAnalysis);
+          });
+          setHistory(fetchedHistory);
+        } catch (error) {
+          console.error("Error fetching history:", error);
+        }
+      } else {
+        setHistory([]);
       }
-    }
+    });
 
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
     }
+    
+    return () => unsubscribe();
   }, []);
+
+  const handleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      // Create user profile in Firestore
+      await setDoc(doc(db, 'users', result.user.uid), {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Failed to sign in. Please try again.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setCurrentView('new');
+      handleStartOver();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const toggleDarkMode = () => {
     setIsDarkMode(prev => {
@@ -74,17 +128,39 @@ export default function App() {
     });
   };
 
-  const saveToHistory = (result: ATSAnalysis) => {
+  const saveToHistory = async (result: ATSAnalysis) => {
     const newHistory = [result, ...history];
     setHistory(newHistory);
-    localStorage.setItem('atsHistory', JSON.stringify(newHistory));
+    
+    if (user) {
+      try {
+        await setDoc(doc(db, 'analyses', result.id), {
+          ...result,
+          userId: user.uid
+        });
+      } catch (error) {
+        console.error("Error saving to Firestore:", error);
+      }
+    } else {
+      localStorage.setItem('atsHistory', JSON.stringify(newHistory));
+    }
   };
 
-  const deleteFromHistory = (id: string, e: React.MouseEvent) => {
+  const deleteFromHistory = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const newHistory = history.filter(item => item.id !== id);
     setHistory(newHistory);
-    localStorage.setItem('atsHistory', JSON.stringify(newHistory));
+    
+    if (user) {
+      try {
+        await deleteDoc(doc(db, 'analyses', id));
+      } catch (error) {
+        console.error("Error deleting from Firestore:", error);
+      }
+    } else {
+      localStorage.setItem('atsHistory', JSON.stringify(newHistory));
+    }
+    
     if (analysisResult?.id === id) {
       handleStartOver();
     }
@@ -436,6 +512,18 @@ Provide the full LaTeX code for the cover letter in a markdown code block (\`\`\
     );
   };
 
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans flex overflow-hidden">
       {/* Mobile Overlay */}
@@ -526,7 +614,31 @@ Provide the full LaTeX code for the cover letter in a markdown code block (\`\`\
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {isDarkMode ? 'Light Mode' : 'Dark Mode'}
           </button>
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700/50">
+          
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-3 px-2 mb-4">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center shrink-0 overflow-hidden">
+                {user?.photoURL ? (
+                  <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <FileUser className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{user?.displayName || 'User'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors dark:text-rose-400 dark:hover:bg-rose-500/10"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700/50 mt-4">
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Pro Tip</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Tailor your resume for each specific job description to maximize your ATS score.</p>
           </div>

@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the ATS CV Analyzer application.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique user ID from Firebase Auth." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's full name." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created." }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Analysis": {
+      "title": "Analysis",
+      "description": "An ATS CV analysis result.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the analysis." },
+        "userId": { "type": "string", "description": "The ID of the user who owns this analysis." },
+        "date": { "type": "string", "format": "date-time", "description": "When the analysis was performed." },
+        "jobTitle": { "type": "string", "description": "The job title analyzed against." },
+        "companyName": { "type": "string", "description": "The company name." },
+        "jobDescription": { "type": "string", "description": "The job description used." },
+        "scores": {
+          "type": "object",
+          "properties": {
+            "overall": { "type": "number" },
+            "formatting": { "type": "number" },
+            "keywords": { "type": "number" },
+            "impact": { "type": "number" },
+            "structure": { "type": "number" },
+            "skills": { "type": "number" }
+          }
+        },
+        "report": {
+          "type": "object",
+          "properties": {
+            "strengths": { "type": "array", "items": { "type": "string" } },
+            "weaknesses": { "type": "array", "items": { "type": "string" } },
+            "missingKeywords": { "type": "array", "items": { "type": "string" } },
+            "formattingProblems": { "type": "array", "items": { "type": "string" } },
+            "improvements": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "rewrittenCV": { "type": "string", "description": "The rewritten CV text." },
+        "latexCode": { "type": "string", "description": "The generated LaTeX code." },
+        "overleafInstructions": { "type": "string", "description": "Instructions for Overleaf." }
+      },
+      "required": ["id", "userId", "date", "jobTitle", "companyName", "scores", "report"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "analyses/{analysisId}": {
+      "schema": { "$ref": "#/entities/Analysis" },
+      "description": "Stores CV analysis results."
+    }
+  }
+}
