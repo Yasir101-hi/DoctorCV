@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail 
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Loader2, FileCode2, CheckCircle2, Stethoscope, Plus } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Loader2, FileCode2, CheckCircle2, Stethoscope, Plus, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function AuthScreen() {
@@ -220,24 +220,67 @@ export default function AuthScreen() {
         </div>
         
         <div className="relative z-10 text-white mb-12">
-          <h2 className="text-4xl font-bold mb-6 leading-tight">Diagnose and Perfect<br/>Your CV</h2>
-          <p className="text-blue-50 text-lg max-w-md leading-relaxed">
-            Join thousands of professionals who have optimized their resumes for ATS systems and landed their dream jobs.
+          <h2 className="text-4xl font-bold mb-6 leading-tight">Elevate Your Career with<br/>AI-Powered CV Analysis</h2>
+          <p className="text-blue-50 text-lg max-w-md leading-relaxed mb-8">
+            Stop guessing what ATS systems want. Get a deep, McKinsey-level evaluation of your resume, discover missing keywords, and generate a tailored cover letter in seconds.
           </p>
+
+          {/* Mini App Preview / Visual Explanation */}
+          <div className="relative w-full max-w-md">
+            <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-blue-100" />
+                  </div>
+                  <div>
+                    <div className="h-2 w-24 bg-white/30 rounded-full mb-2"></div>
+                    <div className="h-2 w-16 bg-white/20 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-green-500/20 px-3 py-1.5 rounded-full border border-green-500/30">
+                  <CheckCircle2 className="w-4 h-4 text-green-300" />
+                  <span className="text-xs font-medium text-green-100">ATS Optimized</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-2 w-full bg-white/20 rounded-full"></div>
+                <div className="h-2 w-5/6 bg-white/20 rounded-full"></div>
+                <div className="h-2 w-4/6 bg-white/20 rounded-full"></div>
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                 <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center justify-center text-center">
+                   <div className="text-3xl font-bold text-white mb-1">92<span className="text-lg text-green-300">%</span></div>
+                   <div className="text-xs text-blue-100 uppercase tracking-wider font-semibold">Match Score</div>
+                 </div>
+                 <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center justify-center text-center">
+                   <div className="text-3xl font-bold text-white mb-1">+15</div>
+                   <div className="text-xs text-blue-100 uppercase tracking-wider font-semibold">Keywords Found</div>
+                 </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Right Side - Auth Form */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+        {/* Subtle Background Pattern for Right Side */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-72 h-72 rounded-full bg-blue-500/5 dark:bg-blue-500/10 blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 rounded-full bg-green-500/5 dark:bg-green-500/10 blur-3xl"></div>
+        </div>
+
         {/* Mobile Logo (visible only on small screens) */}
-        <div className="lg:hidden mb-8">
+        <div className="lg:hidden mb-8 relative z-10">
           <Logo />
         </div>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md relative z-10"
         >
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             {/* Header */}
