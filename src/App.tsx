@@ -14,7 +14,32 @@ const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY
 });
 
-const MODEL_NAME = "gemini-3.1-flash-lite-preview";
+const MODEL_NAME = "gemini-3-flash-preview";
+
+// Helper function to automatically retry failed Gemini API calls
+const callGeminiWithRetry = async (params: any, maxRetries = 3, baseDelayMs = 2000) => {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    try {
+      return await ai.models.generateContent(params);
+    } catch (error: any) {
+      attempt++;
+      const errorMessage = error.message || String(error);
+      const isRetryable = errorMessage.includes('503') || 
+                          errorMessage.includes('429') || 
+                          errorMessage.includes('UNAVAILABLE') || 
+                          errorMessage.includes('high demand') || 
+                          errorMessage.includes('quota');
+      
+      if (!isRetryable || attempt >= maxRetries) {
+        throw error;
+      }
+      
+      console.warn(`Gemini API error (attempt ${attempt}/${maxRetries}). Retrying in ${baseDelayMs * attempt}ms...`, errorMessage);
+      await new Promise(resolve => setTimeout(resolve, baseDelayMs * attempt)); // Exponential backoff
+    }
+  }
+};
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'new' | 'history' | 'compare' | 'resumes' | 'cover-letters'>('new');
@@ -201,10 +226,42 @@ export default function App() {
     setStep('analyzing');
     
     try {
-      const promptText = `You are a professional ATS Resume Analyzer trained on modern recruitment systems used by international companies, as well as a LaTeX resume specialist.
-Your job is to simulate how Applicant Tracking Systems evaluate resumes.
-You must analyze the resume with high precision and generate a realistic ATS compatibility score.
-Do NOT generate random scores. The ATS score must be calculated based on weighted evaluation criteria.
+      const promptText = `Act as a Senior Hiring Manager with over 25 years of experience, ATS System + McKinsey Consultant.
+
+Your task is NOT just to score the CV based on keywords or formatting.
+
+You must evaluate the CV as if you are deciding whether to shortlist this candidate for a real ${jobTitle} role at ${companyName}.
+
+Follow this exact evaluation framework:
+
+1. Market Reality Check:
+* Evaluate if this CV would realistically pass ATS filters in top companies (not generic tools).
+* Consider different ATS systems (Workday, Taleo, SAP SuccessFactors).
+
+2. Experience Depth Analysis:
+* Is the candidate truly a ${jobTitle} or a career switcher?
+* Evaluate years of relevant experience vs job expectations.
+* Penalize weak or short experience.
+
+3. Business Impact Evaluation:
+* Are achievements quantified with real impact?
+* Do bullet points show outcomes or just tasks?
+
+4. Timeline & Credibility Check:
+* Detect any future dates, inconsistencies, or unrealistic claims.
+* Apply a heavy penalty if found.
+
+5. Keyword & Skill Coverage:
+* Compare against real market demand for ${jobTitle}s.
+* Identify missing critical skills.
+
+6. Positioning & Story:
+* Is the CV clearly positioned for a ${jobTitle} role?
+* Or is it mixed/confusing?
+
+7. Final Decision Simulation:
+* Would you shortlist this candidate? (Yes / Maybe / No)
+* Explain WHY like a real hiring manager.
 
 Job Title: ${jobTitle}
 Company: ${companyName}
@@ -215,48 +272,42 @@ ${jobDescription}
 ${cvFile ? "Here is the user's CV attached as a PDF document." : `Here is the user's CV:\n${cvText}`}
 
 --------------------------------
-ATS SCORING MODEL
-Total score = 100
-Evaluate the resume using the following weights:
-
-1. Keyword Matching (30%)
-Compare the resume with the Job Description. Check required skills, technical keywords, job titles, and tools/technologies. Calculate a keyword match percentage.
-
-2. ATS Formatting Compatibility (20%)
-Check if formatting is readable by ATS. Penalize for tables, icons, graphics, columns, images, unusual fonts. Reward simple formatting, clear headings, bullet points, chronological structure.
-
-3. Skills Alignment (20%)
-Evaluate whether skills in the resume match job requirements (hard skills, technical skills, tools, industry skills).
-
-4. Achievements and Impact (15%)
-Evaluate whether experience bullet points include measurable results, numbers, achievements, and action verbs (e.g., "Increased sales by 30% in 6 months").
-
-5. Resume Structure & Clarity (15%)
-Check for ATS-recognized sections (Summary, Experience, Skills, Education, Certifications). Evaluate readability and organization.
-
---------------------------------
-DEEP ANALYSIS & KEYWORD GAP ANALYSIS
-Provide Strengths, Weaknesses causing ATS rejection, Top 10 missing keywords from the job description, Formatting problems, and Suggestions for improvement.
-
---------------------------------
-FINAL VERDICT
-Classify the resume internally:
-90-100: Excellent ATS Resume
-75-89: Strong Resume
-60-74: Needs Improvement
-Below 60: High Risk of ATS Rejection
-
---------------------------------
-IMPORTANT RULES
-• Be strict and realistic
-• Simulate real ATS behavior
-• Avoid overly generous scores
-• Explain scoring clearly
-
---------------------------------
 OUTPUT REQUIREMENTS
 You must return a detailed JSON response matching the required schema.
-Include the calculated scores, the deep analysis report, a professionally rewritten CV in Markdown (optimized for the ATS), raw LaTeX code for Overleaf (using a clean ATS-friendly template), and Overleaf instructions.`;
+
+For the "report" field in the JSON, you MUST use the following exact markdown format:
+
+## Hiring Manager Evaluation
+
+**Realistic ATS Score:** [0-100]
+**Hiring Decision:** [Yes / Maybe / No]
+
+### Top Strengths
+* [Strength 1]
+* [Strength 2]
+* [Strength 3]
+
+### Critical Weaknesses
+* [Weakness 1]
+* [Weakness 2]
+* [Weakness 3]
+
+### Missing Skills (market-based)
+* [Skill 1]
+* [Skill 2]
+
+### Red Flags
+* [Red Flag 1 or "None detected"]
+
+### Clear Actionable Improvements
+* [Improvement 1]
+* [Improvement 2]
+
+### Final Decision Simulation
+[Explain WHY like a real hiring manager]
+
+In addition to the report, provide a professionally rewritten CV in Markdown (optimized for the ATS), raw LaTeX code for Overleaf (using a clean ATS-friendly template), and Overleaf instructions in their respective JSON fields.
+IMPORTANT: Do NOT give inflated scores. Be strict and realistic as if you are hiring for a competitive role.`;
 
       const parts: any[] = [{ text: promptText }];
 
@@ -278,7 +329,7 @@ Include the calculated scores, the deep analysis report, a professionally rewrit
         });
       }
 
-      const response = await ai.models.generateContent({
+      const response = await callGeminiWithRetry({
         model: MODEL_NAME,
         contents: { parts },
         config: {
@@ -342,7 +393,15 @@ Include the calculated scores, the deep analysis report, a professionally rewrit
       setStep('results');
     } catch (error: any) {
       console.error('Error analyzing CV:', error);
-      alert(`Failed to analyze CV: ${error.message || error}`);
+      
+      // Handle specific 503 Overloaded error
+      const errorMessage = error.message || String(error);
+      if (errorMessage.includes('503') || errorMessage.includes('UNAVAILABLE') || errorMessage.includes('high demand')) {
+        alert("The AI model is currently experiencing high demand. Please wait a moment and try again.\n\nالسيرفرات تواجه ضغطاً عالياً حالياً، يرجى الانتظار دقيقة والمحاولة مرة أخرى.");
+      } else {
+        alert(`Failed to analyze CV. Please try again. Error: ${errorMessage}`);
+      }
+      
       setStep('input');
     }
   };
@@ -368,7 +427,7 @@ ${analysisResult.rewrittenCV}
 
 Provide the full LaTeX code for the cover letter in a markdown code block (\`\`\`latex ... \`\`\`). Also provide a plain text version of the cover letter.`;
 
-      const response = await ai.models.generateContent({
+      const response = await callGeminiWithRetry({
         model: MODEL_NAME,
         contents: promptText,
       });
